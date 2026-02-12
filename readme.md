@@ -7,7 +7,7 @@ It solves the common issues with "hummy" fans and missing `pigpio` packages on n
 ## Features
 
 - **Silent Operation:** Runs at **25kHz** (Hardware PWM) to eliminate motor noise.
-- **Smart Curve:** - **Idle (<40°C):** 25% speed (Silent)
+- **Smart Curve:** - **Idle (<50°C):** 35% speed (Silent)
     - **Load (50°C):** 50% speed
     - **Max (70°C):** 100% speed
 - **Clean Logs:** Only logs when fan speed actually changes (no log spam).
@@ -26,8 +26,8 @@ Before running the software, ensure your fan is connected to the correct pins:
 1.  **Clone this repository:**
 
     ```bash
-    git clone <YOUR_REPO_URL>
-    cd <YOUR_REPO_NAME>
+    git clone https://github.com/rushin236/install_pwm_fan.git
+    cd install_pwm_fan
     ```
 
 2.  **Run the installer:**
