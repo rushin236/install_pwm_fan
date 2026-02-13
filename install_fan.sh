@@ -70,21 +70,21 @@ POLL_INTERVAL = 3       # Seconds
 
 # Temperature Curve
 TEMP_IDLE = 35          # Below this = Idle Speed
-TEMP_START_RAMP = 40    # Start increasing speed
+TEMP_START_RAMP = 50    # Start increasing speed
 TEMP_MAX = 70           # 100% Speed
-SPEED_IDLE = 0.25       # 25% Speed
-SPEED_AT_40C = 0.40     # 40% Speed
+SPEED_IDLE = 0.35       # 25% Speed
+SPEED_AT_50C = 0.50     # 50% Speed
 SPEED_MAX = 1.00        # 100% Speed
 
 def get_speed(temp):
     if temp >= TEMP_MAX: return SPEED_MAX
     if temp < TEMP_START_RAMP: return SPEED_IDLE
     
-    # Linear calculation between 40C and 70C
+    # Linear calculation between 50C and 70C
     temp_range = TEMP_MAX - TEMP_START_RAMP
-    speed_range = SPEED_MAX - SPEED_AT_40C
+    speed_range = SPEED_MAX - SPEED_AT_50C
     current_offset = temp - TEMP_START_RAMP
-    return SPEED_AT_40C + ((current_offset / temp_range) * speed_range)
+    return SPEED_AT_50C + ((current_offset / temp_range) * speed_range)
 
 def main():
     try:
@@ -116,7 +116,7 @@ def main():
             time.sleep(POLL_INTERVAL)
 
     except KeyboardInterrupt:
-        fan.value = SPEED_AT_40C
+        fan.value = SPEED_AT_50C
         sys.exit(0)
 
 if __name__ == "__main__":
