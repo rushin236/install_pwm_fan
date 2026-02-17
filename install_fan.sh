@@ -8,8 +8,8 @@
 set -e  # Exit on error
 
 if [ "$EUID" -ne 0 ]; then
-  echo "Please run as root (sudo ./install_fan.sh)"
-  exit
+    echo "Please run as root (sudo ./install_fan.sh)"
+    exit
 fi
 
 echo ">>> Updating System..."
@@ -68,55 +68,59 @@ GPIO_PIN = 18           # Physical Pin 12
 PWM_FREQ = 25000        # 25kHz (Silent)
 POLL_INTERVAL = 3       # Seconds
 
-# Temperature Curve
-TEMP_IDLE = 35          # Below this = Idle Speed
-TEMP_START_RAMP = 50    # Start increasing speed
-TEMP_MAX = 70           # 100% Speed
-SPEED_IDLE = 0.35       # 25% Speed
-SPEED_AT_50C = 0.50     # 50% Speed
-SPEED_MAX = 1.00        # 100% Speed
-
-def get_speed(temp):
-    if temp >= TEMP_MAX: return SPEED_MAX
-    if temp < TEMP_START_RAMP: return SPEED_IDLE
-    
-    # Linear calculation between 50C and 70C
-    temp_range = TEMP_MAX - TEMP_START_RAMP
-    speed_range = SPEED_MAX - SPEED_AT_50C
-    current_offset = temp - TEMP_START_RAMP
-    return SPEED_AT_50C + ((current_offset / temp_range) * speed_range)
-
 def main():
+    # Attempt to connect to the pigpio daemon
     try:
         factory = PiGPIOFactory()
     except Exception:
-        print("Error: pigpiod daemon not running.")
+        print("Error: pigpiod daemon not running. Run: sudo pigpiod")
         sys.exit(1)
 
-    fan = PWMOutputDevice(GPIO_PIN, initial_value=SPEED_IDLE, frequency=PWM_FREQ, pin_factory=factory)
+    # Initialize Hardware
+    # Note: initial_value set to 0.5 (50%) just to start safe
+    fan = PWMOutputDevice(GPIO_PIN, initial_value=0.5, frequency=PWM_FREQ, pin_factory=factory)
     cpu = CPUTemperature()
-    
-    last_speed = -1
 
-    print(f"Fan Control Started. Idle: {int(SPEED_IDLE*100)}%, Max: {TEMP_MAX}C")
+    last_speed = -1
+    print("Fan Control Started using Custom IF/ELSE Curve.")
 
     try:
         while True:
             temp = cpu.temperature
-            speed = get_speed(temp)
+            speed = 0.0
+
+            # ---------------------------------------------------------
+            # CUSTOM FAN CURVE (IF/ELSE BLOCK)
+            # ---------------------------------------------------------
+            if temp < 40:
+                speed = 0.40  # Below 40°C: Run at 40% speed (Idle)
+
+            elif temp < 50:
+                speed = 0.50  # 40°C to 49.9°C: Run at 50% speed
+
+            elif temp < 60:
+                speed = 0.75  # 50°C to 59.9°C: Run at 75% speed
+
+            else:
+                speed = 1.00  # 60°C and above: Run at 100% speed
+            # ---------------------------------------------------------
+
+            # Apply the speed to the fan
             fan.value = speed
-            
+
+            # Calculate percentage for display
             pct = int(speed * 100)
-            
+
             # Log only on change to keep journals clean
             if pct != last_speed:
                 print(f"Fan Speed Changed: {pct}% (Temp: {temp:.1f}C)", flush=True)
                 last_speed = pct
-                
+
             time.sleep(POLL_INTERVAL)
 
     except KeyboardInterrupt:
-        fan.value = SPEED_AT_50C
+        print("\nStopping Fan Control...")
+        fan.value = 0.50  # Set to a safe 50% on exit
         sys.exit(0)
 
 if __name__ == "__main__":
